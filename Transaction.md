@@ -83,6 +83,29 @@ COMMIT TRAN
 - 롤백은?
 쿼리실행 결과를 취소하고 디비를 트랜잭션 이전 상태로 되돌리는 것
 
+### 데이터 롤백 시 UnDo 로그를 통해 롤백한다
+- UnDo를 통해 역순으로 기록을하게 되면 데이터가 이전 상태로 복구된다.
+   - ```sql
+   로그_1 accounts 구매자.balacne 10000
+   로그_1 accounts 판매자.balance 0
+   ```
+   
+![](https://velog.velcdn.com/images/minthug94_/post/9ca0ba0e-7808-4fb1-ab85-7f8bc28aa3ab/image.png)
+
+### 예상치 못한 오류 발생 시 ReDo 로그와 UnDo 로그를 통해 복구
+- ReDo 로그를 순차적으로 실행 해서 데이터들을 다시 일관성있게 만들어 준다.
+   - ```sql
+   트랜잭션_1 START
+   트랜잭션_1 UPDATE accounts 구매자.balance 0
+   트랜잭션_1 UPDATE accounts 판매자.balance 10000
+   ```
+- UnDo 로그를 역순으로 실행해서 다시 커밋이 되지 않은 것들을 이전 상태로 
+돌린다
+    -  ```sql
+    로그_1 accoutns 구매자.balance 10000
+    로그_1 accoutns 판매자.balance 0
+    ```
+
 ### 간단하게 보는 ACID
 Atomicity 원자성
 트랜잭션은 DB에 모두 반영되거나, 전혀 반영되지 않아야 한다
@@ -124,12 +147,6 @@ ACID 성질은 이론적으로 보장해야하는 성질이고, 실제로는 성
 
 - READ-UNCOMMITTED
 커밋 전의 트랜잭션의 데이터 변경 내용을 다른 트랜잭션이 읽는것을 허용
-![](https://velog.velcdn.com/images/minthug94_/post/f5b17515-06f6-4ca9-a3d5-d8a98c6b7876/image.png)
-
-> ⚠️ Dirty Read
-트랜잭션 A가 만약 트랜잭션을 끝마치지 못하고 롤백 한다면 트랜젝션 B는 
-무효가 된 데이터 값을 읽고 처리를 하기 때문에 문제 발생
-(etc. Non-Repeatable Read, Phantom Read)
 
 - READ-COMMITTED
 커밋이 완료된 트랜잭션의 변경사항만 다른 트랜잭션에서 조회 가능
@@ -142,8 +159,35 @@ ACID 성질은 이론적으로 보장해야하는 성질이고, 실제로는 성
 
 ![](https://velog.velcdn.com/images/minthug94_/post/c7ccf35d-2df1-4f42-ac10-176d99f6c3c0/image.png)
 
+
+
+> ⚠️ Dirty Read
+Dirty page(메모리엔 변경 되었지만 디스크엔 아직 변경이 되지않은 데이터)에 
+있는 데이터를 검색, 커밋되지 않은 데이터를 Read 하기 때문에 Dirty Read 후 
+Dirty page가 롤백 되어 잘못된 데이터를 읽어온 상태가 된다
+(이미지 예시)
+트랜잭션 A가 만약 트랜잭션을 끝마치지 못하고 롤백 한다면 트랜젝션 B는 
+무효가 된 데이터 값을 읽고 처리를 하기 때문에 문제 발생
+![](https://velog.velcdn.com/images/minthug94_/post/6d682743-662f-4e73-bcc1-491215ab9f3a/image.png)
+
+
+> ⚠️ NON-REPEATABLE READ
+하나의 트랜젝션에서 같은 쿼리를 두 번 이상 수행 시, 똑같은 쿼리문임에도 
+다른 결과를 나타내는 현상
+(위의 이미지 예시)
+같은 트랜잭션 내에서 READ 시 값이 다르게 나오는 데이터 불일치 문제
+트랜잭션 중 데이터가 변경되면 문제가 발생할 수 있다.
+![](https://velog.velcdn.com/images/minthug94_/post/1dea0c42-887f-4c73-808d-25cc26e5c64a/image.png)
+
+> ⚠️ Phantom Read
+NON-REPEATABLE READ 의 한 종류 이며,
+하나의 트랜젝션에서 일정 범위의 레코드를 두 번 이상 읽어올때, 똑같은 
+쿼리문임에도 첫 번째 쿼리에서 없던 레코드가 두번째 쿼리에서 나타나는 현상
+![](https://velog.velcdn.com/images/minthug94_/post/b842b47e-d79c-455a-9f52-a22a7ed5dd66/image.png)
+
 ### Transaction Propagation (트랜잭션 전파 타입)
-- 트랜잭션의 경계에서 트랜잭션이 어떻게 동작할 것인가
+- 트랜잭션의 경계에서 트랜잭션이 어떻게 동작할 것인가 결정하는 것
+
 ```java
 public class ServiceA {
 	private ServiceB serviceB;
@@ -163,4 +207,40 @@ public class ServiceA {
 
 ![](https://velog.velcdn.com/images/minthug94_/post/30222ff4-0315-441e-84d3-5b128f464f84/image.png)
 
+- ### Timeout
+```sql
+@Transactional(timeout=10)
+```
+- 초 단위로 트랜잭션 제한시간을 설정하는 속성
+- 설정된 시간이 지나면 예외가 발생하며 롤백
+- 따로 설정하지 않으면 timeout 속성은 지정되어 있지 않다
 
+- ### readOnly
+```sql
+@Transactional(readOnly=true)
+```
+- 트랜잭션 작업 내에서 update, insert, delete 작업이 일어나는 것을 
+방지한다
+- 해당 옵션을 적용하면 flush 모드가 manual로 설정되어 JPA의 DirtyChecking 
+기능을 무시해 성능 향상에 도움을 준다
+
+- ### rollbackFor
+```sql
+@Transactional(rollbackFor=NoSuchElementException.class)
+```
+- 체크 예외를 롤백 대상으로 삼고싶을때 사용
+- 기본적으로 트랜잭션은 런타임 예외와 Error가 발생했을때만 롤백
+- 체크 예외나 예외가 발생하지 않으면 커밋하도록 한다
+
+- ### noRollbakckFor
+```sql
+@Transactional(noRollbackFor={IOException.class, SqlException.class}
+```
+- 롤백 대상이 지정된 런타임 예외를 롤백하지 않고 커밋하도록 한다
+
+----------------------------------------------------
+참고 url
+
+https://youtu.be/e9PC0sroCzc
+https://youtu.be/ImvYNlF_saE
+https://devlopsquare.tistory.com/237
