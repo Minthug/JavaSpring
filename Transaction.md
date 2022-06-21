@@ -28,13 +28,13 @@ COMMIT TRAN
 6. ReDO 로그와 UnDO 로그에 기록
 - ReDO 로그
     - 변경 후의 값을 기록
-    - ```sql
+    ```sql
     트랜잭션_1 START
     트랜잭션_1 UPDATE accounts 구매자.balance 0 
     ```
 - UnDo 로그
    - 변경 전의 값을 기록
-   - 
+  
    ```sql
    로그_1 accounts 구매자.balance 10000
    ```
@@ -47,14 +47,14 @@ COMMIT TRAN
 
 10. ReDo 로그와 UnDo 로그에 기록
 - ReDo
-   - 
+    
    ```sql
     트랜잭션_1 START
     트랜잭션_1 UPDATE accounts 구매자.balance 0
     트랜잭션_1 UPDATE accounts 판매자.balance 10000
    ```
 - UnDO
-  - 
+   
   ```sql
   로그_1 accounts 구매자.balance 10000
   로그_1 accounts 판매자.balance 0
@@ -85,7 +85,7 @@ COMMIT TRAN
 
 ### 데이터 롤백 시 UnDo 로그를 통해 롤백한다
 - UnDo를 통해 역순으로 기록을하게 되면 데이터가 이전 상태로 복구된다.
-   - ```sql
+    ```sql
    로그_1 accounts 구매자.balacne 10000
    로그_1 accounts 판매자.balance 0
    ```
@@ -94,14 +94,14 @@ COMMIT TRAN
 
 ### 예상치 못한 오류 발생 시 ReDo 로그와 UnDo 로그를 통해 복구
 - ReDo 로그를 순차적으로 실행 해서 데이터들을 다시 일관성있게 만들어 준다.
-   - ```sql
+   ```sql
    트랜잭션_1 START
    트랜잭션_1 UPDATE accounts 구매자.balance 0
    트랜잭션_1 UPDATE accounts 판매자.balance 10000
    ```
 - UnDo 로그를 역순으로 실행해서 다시 커밋이 되지 않은 것들을 이전 상태로 
 돌린다
-    -  ```sql
+    ```sql
     로그_1 accoutns 구매자.balance 10000
     로그_1 accoutns 판매자.balance 0
     ```
