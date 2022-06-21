@@ -1,43 +1,86 @@
 # Transaction
 이 글은 트랜잭션을 제대로 이해하고 정리하기위해 작성하는 글이다
 
-### Transaction이란 ?
-데이터베이스의 상태를 변화시키기 해서 수행하는 작업의 단위를 뜻한다
+### Transaction mechanism
 
-- 거래가 일어날 때의 과정
-1. 구매자 계좌에서 10000원 출금
-Queay
-Update문 : 구매자 계좌에서 10000원 빼기
+![](https://velog.velcdn.com/images/minthug94_/post/7c89394a-9272-4910-8339-846ead92b2ac/image.png)
 
-2. 판매자 계좌에 10000원 입금
-Queay
-Update문 : 판매자 계좌에서 10000원 더하기
+```sql
+BEGIN TRAN
+UPDATE accounts
+SET balance = balance - 10000
+WHERE user = '구매자'
+SET balance = balance + 10000
+WHERE user = '판매자'
+COMMIT TRAN
+```
+### 과정을 보자
+
+1. UPDATE accounts SET balance = balance - 10000 WHERE user = '구매자' 
+쿼리 실행
+2. 업데이트에 필요한 데이터를 데이터 캐시에 요청, 데이터 캐시에 해당 
+데이터가 없다
+3. 데이터 파일에서 데이터를 가져와야 한다
+4. 그리고 데이터 캐시에 필요한 데이터가 로드 된다.
+![](https://velog.velcdn.com/images/minthug94_/post/394fe2ad-27f9-44ea-9b4a-8adc94b2cc7a/image.png)
+5. 데이터가 로드 된 후, 업데이트를 하면 되는데 그 전에 로그 캐시에 로그를 
+기록해야 한다
+6. ReDO 로그와 UnDO 로그에 기록
+- ReDO 로그
+    - 변경 후의 값을 기록
+    - ```sql
+    트랜잭션_1 START
+    트랜잭션_1 UPDATE accounts 구매자.balance 0 
+    ```
+- UnDo 로그
+   - 변경 전의 값을 기록
+   - 
+   ```sql
+   로그_1 accounts 구매자.balance 10000
+   ```
+7. 로그 기록 후 데이터 캐시에 있는 값을 변경하면 된다
+![](https://velog.velcdn.com/images/minthug94_/post/342ed8b4-866e-434d-904c-16582ad7fbe6/image.png)
+8. UPDATE accounts SET balance = balance + 10000 WHERE user = '판매자' 
+쿼리 실행
+9. 판매자의 데이터가 없으므로 데이터 파일에서 데이터 캐시로 로드
+![](https://velog.velcdn.com/images/minthug94_/post/cf7c3c82-44ee-4def-908c-0951be813909/image.png)
+
+10. ReDo 로그와 UnDo 로그에 기록
+- ReDo
+   - 
+   ```sql
+    트랜잭션_1 START
+    트랜잭션_1 UPDATE accounts 구매자.balance 0
+    트랜잭션_1 UPDATE accounts 판매자.balance 10000
+   ```
+- UnDO
+  - 
+  ```sql
+  로그_1 accounts 구매자.balance 10000
+  로그_1 accounts 판매자.balance 0
+  ```
+11. 데이터 캐시의 데이터 업데이트
+![](https://velog.velcdn.com/images/minthug94_/post/f4d7e960-2155-490f-a376-dc11620a1394/image.png)
+
+12. 트랜잭션의 한 단위 끝
+
 
 #### 오류
 
-Update문 : 구매자 계좌에서 10000원 빼기
-
-오류 발생
-
-~~Update문 : 판매자 계좌에서 10000원 더하기~~
-
-
 하나의 작업으로 이루어지는 여러 쿼리들을 트랜잭션이라는 논리적인 하나의 
-작업 단위로 묶어
-쿼리들이 한번에 작업되거나 아예 동작하지않거나할수있다
+작업 단위로 묶어 쿼리들이 한번에 작업되거나 아예 동작 하지 않거나 할수있다
 
-트랜잭션은 사용자 혹은 시스템상의 실수가  있더라도 데이터베이스가 데이터를 
-안정적으로 보장할수있도록 한다
+트랜잭션은 사용자 혹은 시스템상의 실수가 있더라도 데이터베이스가 데이터를 
+안정적으로 보장할 수 있도록 한다
 
-ㅡㅡㅡㅡㅡㅡ
-하나의 트랜잭션이 모두 실행되거나 아무 쿼리도 실행 되지 않는것을 커밋 혹은 
-롤백이라 한다
+하나의 트랜잭션이 모두 실행되거나 아무 쿼리도 실행 되지 않는것을 '커밋' 
+혹은 '롤백'이라 한다
 
-커밋이란?
+- 커밋이란?
 일종의 확인 도장으로 트랜잭션 묶인 모든 쿼리가 성공되어 트랜잭션 쿼리 
 결과를 실제 디비에 반영하는 것이고 
 
-롤백은?
+- 롤백은?
 쿼리실행 결과를 취소하고 디비를 트랜잭션 이전 상태로 되돌리는 것
 
 ### 간단하게 보는 ACID
@@ -119,13 +162,5 @@ public class ServiceA {
 ```
 
 ![](https://velog.velcdn.com/images/minthug94_/post/30222ff4-0315-441e-84d3-5b128f464f84/image.png)
-
-
-간단하게 SQL(질의어)를 이용해 데이터베이스에 접근 하는 것을 의미
-
-- SELECT
-- INSERT
-- DELETE
-- UPDATE
 
 
