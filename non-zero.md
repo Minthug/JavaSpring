@@ -24,3 +24,32 @@ OAuth 과제 실습을 진행하는 도중 해당 오류가 계속 잡혀서 이
 금요일엔 괜찮았는데 ?!
 
 조금 더 해결해보자 한 스텝은 넘겼으니깐
+--------------------
+
+하루 지나고 다시 코드를 처음부터 진행하는 도중 어디서 문제가 생긴지 
+확인했다.
+![](https://velog.velcdn.com/images/minthug94_/post/2f906b9c-7bc1-49a4-8d79-166542208606/image.png)
+
+패스워드 암호화하는 과정에 딱 처음 봤던 오류가 그대로 발생했다
+일단 배제하고 결과를 본 후 다시 문제를 해결해야겠다
+
+![](https://velog.velcdn.com/images/minthug94_/post/23fed6c1-7274-4d05-b224-997b3b2d6212/image.png)
+
+Edit Configurations 를 통해 Build and run 을 자바 11 JDK로 바꿔 진행을 
+했지만,
+여전히 오류를 발생시켰다.
+
+![](https://velog.velcdn.com/images/minthug94_/post/cfd33a47-ce3b-4816-aa68-1c399491572c/image.png)
+
+
+![](https://velog.velcdn.com/images/minthug94_/post/92110990-4a24-4968-8053-a7902c043386/image.png)
+
+같이 오늘 공부한 페어님께서 이 방법은 어떠한지 제안을 해주셔서 
+해결해버렸다 ! 너무 기쁘다!!
+
+sourceCompatibility = '11' 이 왜인지 모르겠지만 인식을 하지않아 오류를 
+계속 발생시켰다
+그래서 해결방법은 targetCompatibility = '11' 을 추가해 인식하게 만드니
+
+약 이틀 간 날 괴롭힌 문제를 해결했다!
+
